@@ -4,7 +4,6 @@
     <title>Ajouter un cas - CHU Mustapha Bacha</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -102,35 +101,6 @@
             min-height: 120px;
         }
 
-        .file-upload {
-            border: 2px dashed #007cba;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            background: #f8f9fa;
-            transition: all 0.3s ease;
-        }
-
-        .file-upload:hover {
-            background: #e9ecef;
-        }
-
-        .file-upload input {
-            display: none;
-        }
-
-        .file-upload-label {
-            cursor: pointer;
-            color: #007cba;
-            font-weight: 600;
-        }
-
-        .file-name {
-            margin-top: 10px;
-            font-size: 0.9em;
-            color: #666;
-        }
-
         .submit-btn {
             background: #28a745;
             color: white;
@@ -159,12 +129,6 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
-        }
-
-        .upload-info {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 5px;
         }
 
         @media (max-width: 768px) {
@@ -238,20 +202,7 @@
 
                 <div class="form-group">
                     <label for="content">Observations / Commentaires :</label>
-                    <textarea id="content" placeholder="Décrivez les observations, résultats, ou informations importantes..." required rows="5"></textarea>
-                </div>
-
-                <!-- NOUVEAU : UPLOAD DE FICHIER -->
-                <div class="form-group">
-                    <label>Ajouter le compte-rendu :</label>
-                    <div class="file-upload">
-                        <label for="fileUpload" class="file-upload-label">
-                            📎 Cliquez ici pour sélectionner un fichier
-                        </label>
-                        <input type="file" id="fileUpload" accept=".pdf,.doc,.docx,.txt">
-                        <div class="file-name" id="fileName">Aucun fichier sélectionné</div>
-                        <div class="upload-info">Formats acceptés: PDF, Word, TXT (max 10MB)</div>
-                    </div>
+                    <textarea id="content" placeholder="Décrivez les observations, résultats, ou informations importantes..." rows="5"></textarea>
                 </div>
 
                 <button type="submit" class="submit-btn" id="submitBtn">💾 Enregistrer le cas</button>
@@ -270,74 +221,24 @@
             appId: "1:690568851415:web:1808813dfd9c7b60dc6592"
         };
 
-        // Initialisation Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const storage = firebase.storage();
-
-        // Variables globales
-        let selectedFile = null;
 
         // Types d'examens spécifiques
         const examTypes = {
-            "IRM": [
-                "IRM cérébrale",
-                "IRM médullaire",
-                "IRM rachidienne",
-                "IRM abdominale",
-                "IRM pelvienne",
-                "IRM mammaire",
-                "IRM cardiaque",
-                "IRM rochers",
-                "IRM articulaire"
-            ],
-            "Scanner": [
-                "TDM cérébrale",
-                "TDM thoracique",
-                "TDM abdominale",
-                "TDM pelvienne",
-                "TDM osseuse",
-                "TDM rochers"
-            ],
-            "Échographie": [
-                "Échographie abdominale",
-                "Échographie pelvienne",
-                "Échographie mammaire",
-                "Échographie thyroïdienne",
-                "Échographie testiculaire",
-                "Échographie cardiaque",
-                "Échographie des parties molles",
-                "Écho-Doppler vasculaire",
-                "Écho-Doppler cardiaque"
-            ],
-            "Radiographie": [
-                "Radiographie thoracique",
-                "Radiographie osseuse",
-                "Radiographie du rachis",
-                "Radiographie dentaire / panoramique",
-                "Radiographie abdominale sans préparation"
-            ],
-            "Mammographie": [
-                "Mammographie standard",
-                "Mammographie avec compression",
-                "Mammographie numérique"
-            ],
-            "Interventionnelle": [
-                "Ponction biopsie",
-                "Drainage",
-                "Infiltration",
-                "Arthrographie",
-                "Myélographie"
-            ]
+            "IRM": ["IRM cérébrale", "IRM médullaire", "IRM rachidienne", "IRM abdominale", "IRM pelvienne", "IRM mammaire", "IRM cardiaque", "IRM rochers", "IRM articulaire"],
+            "Scanner": ["TDM cérébrale", "TDM thoracique", "TDM abdominale", "TDM pelvienne", "TDM osseuse", "TDM rochers"],
+            "Échographie": ["Échographie abdominale", "Échographie pelvienne", "Échographie mammaire", "Échographie thyroïdienne", "Échographie testiculaire", "Échographie cardiaque", "Échographie des parties molles", "Écho-Doppler vasculaire", "Écho-Doppler cardiaque"],
+            "Radiographie": ["Radiographie thoracique", "Radiographie osseuse", "Radiographie du rachis", "Radiographie dentaire / panoramique", "Radiographie abdominale sans préparation"],
+            "Mammographie": ["Mammographie standard", "Mammographie avec compression", "Mammographie numérique"],
+            "Interventionnelle": ["Ponction biopsie", "Drainage", "Infiltration", "Arthrographie", "Myélographie"]
         };
 
-        // Mettre à jour les types spécifiques
+        // Mise à jour des sous-types
         function updateSpecificTypes() {
             const generalType = document.getElementById('examType').value;
             const specificSelect = document.getElementById('specificType');
-            
             specificSelect.innerHTML = '<option value="">Sélectionnez le type spécifique</option>';
-            
             if (generalType && examTypes[generalType]) {
                 examTypes[generalType].forEach(type => {
                     const option = document.createElement('option');
@@ -348,48 +249,17 @@
             }
         }
 
-        // Gérer la sélection de fichier
-        document.getElementById('fileUpload').addEventListener('change', function(e) {
-            selectedFile = e.target.files[0];
-            const fileName = document.getElementById('fileName');
-            
-            if (selectedFile) {
-                // Vérifier la taille du fichier (max 10MB)
-                if (selectedFile.size > 10 * 1024 * 1024) {
-                    alert('Le fichier est trop volumineux. Maximum 10MB autorisé.');
-                    selectedFile = null;
-                    fileName.textContent = 'Aucun fichier sélectionné';
-                    return;
-                }
-                
-                // Vérifier le type de fichier
-                const allowedTypes = ['.pdf', '.doc', '.docx', '.txt'];
-                const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
-                
-                if (!allowedTypes.includes(fileExtension)) {
-                    alert('Type de fichier non autorisé. Formats acceptés: PDF, Word, TXT');
-                    selectedFile = null;
-                    fileName.textContent = 'Aucun fichier sélectionné';
-                    return;
-                }
-                
-                fileName.textContent = `📄 ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
-            } else {
-                fileName.textContent = 'Aucun fichier sélectionné';
-            }
-        });
-
-        // Définir la date d'aujourd'hui par défaut
+        // Date du jour par défaut
         document.getElementById('dateExamen').valueAsDate = new Date();
 
-        // Envoyer le formulaire
+        // Soumission du formulaire
         document.getElementById('caseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ Enregistrement en cours...';
-            
+
             const medecin = document.getElementById('medecin').value;
             const patient = document.getElementById('patient').value;
             const dateExamen = document.getElementById('dateExamen').value;
@@ -397,35 +267,29 @@
             const specificType = document.getElementById('specificType').value;
             const diagnostic = document.getElementById('diagnostic').value;
             const content = document.getElementById('content').value;
-            
-            if (medecin && patient && dateExamen && examType && specificType && content) {
+
+            if (medecin && patient && dateExamen && examType && specificType) {
                 try {
-                    let fileUrl = null;
-                    
-                    // Upload du fichier si sélectionné
-                    if (selectedFile) {
-                        const fileRef = storage.ref().child(`compte-rendus/${Date.now()}_${selectedFile.name}`);
-                        const snapshot = await fileRef.put(selectedFile);
-                        fileUrl = await snapshot.ref.getDownloadURL();
-                    }
-                    
-                    // Enregistrer le cas dans Firestore
                     await db.collection('cas').add({
-                        medecin: medecin,
-                        patient: patient,
-                        dateExamen: dateExamen,
-                        examType: examType,
-                        specificType: specificType,
-                        diagnostic: diagnostic,
-                        content: content,
-                        fichierUrl: fileUrl,
-                        fichierNom: selectedFile ? selectedFile.name : null,
+                        medecin,
+                        patient,
+                        dateExamen,
+                        examType,
+                        specificType,
+                        diagnostic,
+                        content,
                         timestamp: new Date()
                     });
-                    
-                    alert('Cas enregistré avec succès !');
-                    window.location.href = 'index.html';
-                    
+
+                    if (confirm('Cas enregistré avec succès ! Voulez-vous retourner à la page d\'accueil ?')) {
+                        window.location.href = 'index.html';
+                    } else {
+                        document.getElementById('caseForm').reset();
+                        document.getElementById('dateExamen').valueAsDate = new Date();
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '💾 Enregistrer le cas';
+                    }
+
                 } catch (error) {
                     console.error('Erreur:', error);
                     alert('Erreur lors de l\'enregistrement. Veuillez réessayer.');
@@ -438,6 +302,8 @@
                 submitBtn.textContent = '💾 Enregistrer le cas';
             }
         });
+
+        updateSpecificTypes();
     </script>
 </body>
 </html>
