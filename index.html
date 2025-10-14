@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CHU Mustapha Pacha - Radiologie</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #0056b3, #007cba);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header h2 {
+            margin: 5px 0 0 0;
+            font-size: 18px;
+            font-weight: normal;
+            opacity: 0.9;
+        }
+        .message { 
+            background: white; 
+            padding: 20px; 
+            margin: 15px 0; 
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            border-left: 4px solid #007cba;
+        }
+        #messageForm { 
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 25px 0; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 5px 0; 
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        select {
+            background-color: #f8f9fa;
+        }
+        button { 
+            background: #007cba; 
+            color: white; 
+            padding: 14px 28px; 
+            border: none; 
+            border-radius: 6px;
+            cursor: pointer; 
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .exam-type {
+            display: inline-block;
+            background: #e3f2fd;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+            color: #1976d2;
+            font-weight: bold;
+        }
+        .specific-type {
+            display: inline-block;
+            background: #f3e5f5;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 5px;
+            color: #7b1fa2;
+        }
+        .message-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .message-content {
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .message-footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CHU MUSTAPHA PACHA</h1>
+        <h2>Service de Radiologie</h2>
+    </div>
+    
+    <form id="messageForm">
+        <div class="form-group">
+            <label for="author">Nom et Prénom :</label>
+            <input type="text" id="author" placeholder="Votre nom et prénom" required>
+        </div>
+
+        <div class="form-group">
+            <label for="examType">Type d'examen :</label>
+            <select id="examType" required onchange="updateSpecificTypes()">
+                <option value="">Sélectionnez un type d'examen</option>
+                <option value="IRM">IRM</option>
+                <option value="Scanner">Scanner / TDM</option>
+                <option value="Échographie">Échographie</option>
+                <option value="Radiographie">Radiographie standard</option>
+                <option value="Mammographie">Mammographie</option>
+                <option value="Interventionnelle">Imagerie interventionnelle</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="specificType">Type spécifique :</label>
+            <select id="specificType" required>
+                <option value="">Sélectionnez d'abord le type d'examen</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="content">Observations / Commentaires :</label>
+            <textarea id="content" placeholder="Entrez vos observations, commentaires ou informations importantes..." rows="5" required></textarea>
+        </div>
+
+        <button type="submit">📤 Enregistrer l'information</button>
+    </form>
+
+    <div id="messages"></div>
+
+    <script>
+        // 🔥 TA CONFIGURATION FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxdeqfmgBPWpWXY9U4HsncExMtAmOLQkM",
+            authDomain: "radial-52865.firebaseapp.com",
+            projectId: "radial-52865",
+            storageBucket: "radial-52865.firebasestorage.app",
+            messagingSenderId: "690568851415",
+            appId: "1:690568851415:web:1808813dfd9c7b60dc6592"
+        };
+
+        // Initialisation Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Types d'examens spécifiques
+        const examTypes = {
+            "IRM": [
+                "IRM cérébrale",
+                "IRM médullaire",
+                "IRM rachidienne",
+                "IRM abdominale",
+                "IRM pelvienne",
+                "IRM mammaire",
+                "IRM cardiaque",
+                "IRM vasculaire / angio-IRM"
+            ],
+            "Scanner": [
+                "TDM cérébrale",
+                "TDM thoracique",
+                "TDM abdominale",
+                "TDM pelvienne",
+                "TDM osseuse",
+                "CT-scan"
+            ],
+            "Échographie": [
+                "Échographie abdominale",
+                "Échographie pelvienne",
+                "Échographie mammaire",
+                "Échographie thyroïdienne",
+                "Échographie testiculaire",
+                "Échographie cardiaque",
+                "Échographie des parties molles",
+                "Écho-Doppler vasculaire",
+                "Écho-Doppler cardiaque"
+            ],
+            "Radiographie": [
+                "Radiographie thoracique",
+                "Radiographie osseuse",
+                "Radiographie du rachis",
+                "Radiographie dentaire / panoramique",
+                "Radiographie abdominale sans préparation"
+            ],
+            "Mammographie": [
+                "Mammographie standard",
+                "Mammographie avec compression",
+                "Mammographie numérique"
+            ],
+            "Interventionnelle": [
+                "Ponction biopsie",
+                "Drainage",
+                "Infiltration",
+                "Arthrographie",
+                "Myélographie"
+            ]
+        };
+
+        // Mettre à jour les types spécifiques
+        function updateSpecificTypes() {
+            const generalType = document.getElementById('examType').value;
+            const specificSelect = document.getElementById('specificType');
+            
+            specificSelect.innerHTML = '<option value="">Sélectionnez le type spécifique</option>';
+            
+            if (generalType && examTypes[generalType]) {
+                examTypes[generalType].forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    specificSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Envoyer un message
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const author = document.getElementById('author').value;
+            const examType = document.getElementById('examType').value;
+            const specificType = document.getElementById('specificType').value;
+            const content = document.getElementById('content').value;
+            
+            if (author && examType && specificType && content) {
+                await db.collection('messages').add({
+                    author: author,
+                    examType: examType,
+                    specificType: specificType,
+                    content: content,
+                    timestamp: new Date()
+                });
+                
+                // Réinitialiser le formulaire
+                document.getElementById('author').value = '';
+                document.getElementById('examType').value = '';
+                document.getElementById('specificType').innerHTML = '<option value="">Sélectionnez d\'abord le type d\'examen</option>';
+                document.getElementById('content').value = '';
+                
+                alert('Information enregistrée avec succès !');
+            } else {
+                alert('Veuillez remplir tous les champs !');
+            }
+        });
+
+        // Afficher les messages en temps réel
+        db.collection('messages')
+          .orderBy('timestamp', 'desc')
+          .onSnapshot(snapshot => {
+              const messagesDiv = document.getElementById('messages');
+              messagesDiv.innerHTML = '';
+              
+              if (snapshot.empty) {
+                  messagesDiv.innerHTML = '<div class="message" style="text-align: center; color: #666;">Aucune information pour le moment</div>';
+                  return;
+              }
+              
+              snapshot.forEach(doc => {
+                  const message = doc.data();
+                  const messageElement = document.createElement('div');
+                  messageElement.className = 'message';
+                  messageElement.innerHTML = `
+                      <div class="message-header">
+                          <strong>👤 ${message.author}</strong>
+                          <span class="exam-type">${message.examType}</span>
+                          <span class="specific-type">${message.specificType}</span>
+                      </div>
+                      <div class="message-content">
+                          ${message.content}
+                      </div>
+                      <div class="message-footer">
+                          🕒 ${message.timestamp?.toDate().toLocaleString('fr-FR')}
+                      </div>
+                  `;
+                  messagesDiv.appendChild(messageElement);
+              });
+          });
+    </script>
+</body>
+</html>
