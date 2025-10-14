@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ajouter un cas - CHU Mustapha Pacha</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #0056b3, #007cba);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header h2 {
+            font-size: 1.3em;
+            font-weight: 400;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .form-container {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: #007cba;
+            background: white;
+            outline: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .file-upload {
+            border: 2px dashed #007cba;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            background: #e9ecef;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-upload-label {
+            cursor: pointer;
+            color: #007cba;
+            font-weight: 600;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .submit-btn {
+            background: #28a745;
+            color: white;
+            padding: 18px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .upload-info {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .back-btn {
+                position: relative;
+                top: auto;
+                left: auto;
+                margin-bottom: 20px;
+                display: inline-block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- En-tête -->
+        <div class="header">
+            <a href="index.html" class="back-btn">← Retour</a>
+            <h1>CHU MUSTAPHA PACHA</h1>
+            <h2>Nouveau Cas Radiologique</h2>
+        </div>
+
+        <!-- Formulaire -->
+        <div class="form-container">
+            <form id="caseForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="medecin">Nom et Prénom du Médecin :</label>
+                        <input type="text" id="medecin" placeholder="Dr. Nom Prénom" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient">Nom et Prénom du Patient :</label>
+                        <input type="text" id="patient" placeholder="Nom Prénom du patient" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dateExamen">Date d'examen :</label>
+                    <input type="date" id="dateExamen" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="examType">Type d'examen :</label>
+                    <select id="examType" required onchange="updateSpecificTypes()">
+                        <option value="">Sélectionnez un type d'examen</option>
+                        <option value="IRM">IRM</option>
+                        <option value="Scanner">Scanner / TDM</option>
+                        <option value="Échographie">Échographie</option>
+                        <option value="Radiographie">Radiographie standard</option>
+                        <option value="Mammographie">Mammographie</option>
+                        <option value="Interventionnelle">Imagerie interventionnelle</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="specificType">Type spécifique :</label>
+                    <select id="specificType" required>
+                        <option value="">Sélectionnez d'abord le type d'examen</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="diagnostic">Diagnostic :</label>
+                    <textarea id="diagnostic" placeholder="Entrez le diagnostic..." rows="3"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Observations / Commentaires :</label>
+                    <textarea id="content" placeholder="Décrivez les observations, résultats, ou informations importantes..." required rows="5"></textarea>
+                </div>
+
+                <!-- NOUVEAU : UPLOAD DE FICHIER -->
+                <div class="form-group">
+                    <label>Ajouter le compte-rendu :</label>
+                    <div class="file-upload">
+                        <label for="fileUpload" class="file-upload-label">
+                            📎 Cliquez ici pour sélectionner un fichier
+                        </label>
+                        <input type="file" id="fileUpload" accept=".pdf,.doc,.docx,.txt">
+                        <div class="file-name" id="fileName">Aucun fichier sélectionné</div>
+                        <div class="upload-info">Formats acceptés: PDF, Word, TXT (max 10MB)</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">💾 Enregistrer le cas</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 🔥 Configuration Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxdeqfmgBPWpWXY9U4HsncExMtAmOLQkM",
+            authDomain: "radial-52865.firebaseapp.com",
+            projectId: "radial-52865",
+            storageBucket: "radial-52865.firebasestorage.app",
+            messagingSenderId: "690568851415",
+            appId: "1:690568851415:web:1808813dfd9c7b60dc6592"
+        };
+
+        // Initialisation Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        // Variables globales
+        let selectedFile = null;
+
+        // Types d'examens spécifiques
+        const examTypes = {
+            "IRM": [
+                "IRM cérébrale",
+                "IRM médullaire",
+                "IRM rachidienne",
+                "IRM abdominale",
+                "IRM pelvienne",
+                "IRM mammaire",
+                "IRM cardiaque",
+                "IRM rochers",
+                "IRM articulaire"
+            ],
+            "Scanner": [
+                "TDM cérébrale",
+                "TDM thoracique",
+                "TDM abdominale",
+                "TDM pelvienne",
+                "TDM osseuse",
+                "TDM rochers"
+            ],
+            "Échographie": [
+                "Échographie abdominale",
+                "Échographie pelvienne",
+                "Échographie mammaire",
+                "Échographie thyroïdienne",
+                "Échographie testiculaire",
+                "Échographie cardiaque",
+                "Échographie des parties molles",
+                "Écho-Doppler vasculaire",
+                "Écho-Doppler cardiaque"
+            ],
+            "Radiographie": [
+                "Radiographie thoracique",
+                "Radiographie osseuse",
+                "Radiographie du rachis",
+                "Radiographie dentaire / panoramique",
+                "Radiographie abdominale sans préparation"
+            ],
+            "Mammographie": [
+                "Mammographie standard",
+                "Mammographie avec compression",
+                "Mammographie numérique"
+            ],
+            "Interventionnelle": [
+                "Ponction biopsie",
+                "Drainage",
+                "Infiltration",
+                "Arthrographie",
+                "Myélographie"
+            ]
+        };
+
+        // Mettre à jour les types spécifiques
+        function updateSpecificTypes() {
+            const generalType = document.getElementById('examType').value;
+            const specificSelect = document.getElementById('specificType');
+            
+            specificSelect.innerHTML = '<option value="">Sélectionnez le type spécifique</option>';
+            
+            if (generalType && examTypes[generalType]) {
+                examTypes[generalType].forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type;
+                    option.textContent = type;
+                    specificSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Gérer la sélection de fichier
+        document.getElementById('fileUpload').addEventListener('change', function(e) {
+            selectedFile = e.target.files[0];
+            const fileName = document.getElementById('fileName');
+            
+            if (selectedFile) {
+                // Vérifier la taille du fichier (max 10MB)
+                if (selectedFile.size > 10 * 1024 * 1024) {
+                    alert('Le fichier est trop volumineux. Maximum 10MB autorisé.');
+                    selectedFile = null;
+                    fileName.textContent = 'Aucun fichier sélectionné';
+                    return;
+                }
+                
+                // Vérifier le type de fichier
+                const allowedTypes = ['.pdf', '.doc', '.docx', '.txt'];
+                const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(fileExtension)) {
+                    alert('Type de fichier non autorisé. Formats acceptés: PDF, Word, TXT');
+                    selectedFile = null;
+                    fileName.textContent = 'Aucun fichier sélectionné';
+                    return;
+                }
+                
+                fileName.textContent = `📄 ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
+            } else {
+                fileName.textContent = 'Aucun fichier sélectionné';
+            }
+        });
+
+        // Définir la date d'aujourd'hui par défaut
+        document.getElementById('dateExamen').valueAsDate = new Date());
+
+        // Envoyer le formulaire
+        document.getElementById('caseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Enregistrement en cours...';
+            
+            const medecin = document.getElementById('medecin').value;
+            const patient = document.getElementById('patient').value;
+            const dateExamen = document.getElementById('dateExamen').value;
+            const examType = document.getElementById('examType').value;
+            const specificType = document.getElementById('specificType').value;
+            const diagnostic = document.getElementById('diagnostic').value;
+            const content = document.getElementById('content').value;
+            
+            if (medecin && patient && dateExamen && examType && specificType && content) {
+                try {
+                    let fileUrl = null;
+                    
+                    // Upload du fichier si sélectionné
+                    if (selectedFile) {
+                        const fileRef = storage.ref().child(`compte-rendus/${Date.now()}_${selectedFile.name}`);
+                        const snapshot = await fileRef.put(selectedFile);
+                        fileUrl = await snapshot.ref.getDownloadURL();
+                    }
+                    
+                    // Enregistrer le cas dans Firestore
+                    await db.collection('cas').add({
+                        medecin: medecin,
+                        patient: patient,
+                        dateExamen: dateExamen,
+                        examType: examType,
+                        specificType: specificType,
+                        diagnostic: diagnostic,
+                        content: content,
+                        fichierUrl: fileUrl,
+                        fichierNom: selectedFile ? selectedFile.name : null,
+                        timestamp: new Date()
+                    });
+                    
+                    alert('Cas enregistré avec succès !');
+                    window.location.href = 'index.html';
+                    
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'enregistrement. Veuillez réessayer.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '💾 Enregistrer le cas';
+                }
+            } else {
+                alert('Veuillez remplir tous les champs obligatoires !');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '💾 Enregistrer le cas';
+            }
+        });
+    </script>
+</body>
+</html>
